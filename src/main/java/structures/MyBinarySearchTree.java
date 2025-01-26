@@ -1,7 +1,7 @@
 package structures;
 
-// Skula/Owen Collaboration over Zoom
 public class MyBinarySearchTree<T extends Comparable<? super T>> implements BinarySearchTree<T> {
+
     private BinaryTreeNode<T> root;
     private int size;
 
@@ -12,86 +12,144 @@ public class MyBinarySearchTree<T extends Comparable<? super T>> implements Bina
 
     @Override
     public BinarySearchTree<T> add(T toAdd) {
-        if (toAdd == null) throw new NullPointerException();
-        root = addHelper(root, toAdd);
-        size++;
+        if (toAdd == null) {
+            throw new NullPointerException("Cannot add null to the tree.");
+        }
+
+        if (root == null) {
+            root = new MyBinaryTreeNode<>(null, toAdd, null);
+            size++;
+        } else {
+            boolean added = addRecursive(root, toAdd);
+            if (added) size++;
+        }
         return this;
     }
 
-    private BinaryTreeNode<T> addHelper(BinaryTreeNode<T> node, T value) {
-        if (node == null) {
-            return new MyBinaryTreeNode<>(null, value, null);
-        }
+    private boolean addRecursive(BinaryTreeNode<T> node, T toAdd) {
+        int cmp = toAdd.compareTo(node.getData());
 
-        int comparison = value.compareTo(node.getData());
-        if (comparison < 0) {
-            node.setLeftChild(addHelper(node.hasLeftChild() ? node.getLeftChild() : null, value));
+        if (cmp <= 0) {
+            // Go left for duplicates and values less than current node
+            if (node.hasLeftChild()) {
+                return addRecursive(node.getLeftChild(), toAdd);
+            } else {
+                node.setLeftChild(new MyBinaryTreeNode<>(null, toAdd, null));
+                return true;
+            }
         } else {
-            // For equal or greater values, add to right subtree
-            node.setRightChild(addHelper(node.hasRightChild() ? node.getRightChild() : null, value));
+            // Go right for values greater than current node
+            if (node.hasRightChild()) {
+                return addRecursive(node.getRightChild(), toAdd);
+            } else {
+                node.setRightChild(new MyBinaryTreeNode<>(null, toAdd, null));
+                return true;
+            }
         }
-        return node;
     }
 
     @Override
     public boolean contains(T toFind) {
-        if (toFind == null) throw new NullPointerException();
-        return containsHelper(root, toFind);
+        if (toFind == null) throw new NullPointerException("Cannot search for null in the tree.");
+        return containsRecursive(root, toFind);
     }
 
-    private boolean containsHelper(BinaryTreeNode<T> node, T value) {
+    private boolean containsRecursive(BinaryTreeNode<T> node, T toFind) {
         if (node == null) return false;
+        int cmp = toFind.compareTo(node.getData());
+        if (cmp == 0) return true;
+        else if (cmp < 0) {
+            return containsRecursive(node.hasLeftChild() ? node.getLeftChild() : null, toFind);
+        } else {
+            return containsRecursive(node.hasRightChild() ? node.getRightChild() : null, toFind);
+        }
+    }
 
-        int comparison = value.compareTo(node.getData());
-        if (comparison == 0) return true;
-        if (comparison < 0) return node.hasLeftChild() && containsHelper(node.getLeftChild(), value);
-        return node.hasRightChild() && containsHelper(node.getRightChild(), value);
+    private class RemovalResult {
+        BinaryTreeNode<T> node;
+        boolean removed;
+
+        RemovalResult(BinaryTreeNode<T> node, boolean removed) {
+            this.node = node;
+            this.removed = removed;
+        }
     }
 
     @Override
     public boolean remove(T toRemove) {
-        if (toRemove == null) throw new NullPointerException();
-        int originalSize = size;
-        root = removeHelper(root, toRemove);
-        return size != originalSize;
-    }
-
-    private BinaryTreeNode<T> removeHelper(BinaryTreeNode<T> node, T value) {
-        if (node == null) return null;
-
-        int comparison = value.compareTo(node.getData());
-        if (comparison < 0) {
-            if (node.hasLeftChild()) {
-                node.setLeftChild(removeHelper(node.getLeftChild(), value));
-            }
-        } else if (comparison > 0) {
-            if (node.hasRightChild()) {
-                node.setRightChild(removeHelper(node.getRightChild(), value));
-            }
-        } else {
+        if (toRemove == null) throw new NullPointerException("Cannot remove null from the tree.");
+        RemovalResult result = removeRecursive(root, toRemove);
+        if (result.removed) {
+            root = result.node;
             size--;
-            // Case 1: No children
-            if (!node.hasLeftChild() && !node.hasRightChild()) {
-                return null;
-            }
-            // Case 2: One child
-            if (!node.hasLeftChild()) return node.getRightChild();
-            if (!node.hasRightChild()) return node.getLeftChild();
-
-            // Case 3: Two children
-            T successor = findMin(node.getRightChild());
-            node.setData(successor);
-            node.setRightChild(removeHelper(node.getRightChild(), successor));
-            size++; // Compensate for the extra decrease
         }
-        return node;
+        return result.removed;
     }
 
-    private T findMin(BinaryTreeNode<T> node) {
+    private RemovalResult removeRecursive(BinaryTreeNode<T> node, T toRemove) {
+        if (node == null) {
+            return new RemovalResult(null, false);
+        }
+
+        int cmp = toRemove.compareTo(node.getData());
+        if (cmp < 0) {
+            if (node.hasLeftChild()) {
+                RemovalResult result = removeRecursive(node.getLeftChild(), toRemove);
+                if (result.removed) {
+                    node.setLeftChild(result.node);
+                    return new RemovalResult(node, true);
+                }
+            }
+            return new RemovalResult(node, false);
+        } else if (cmp > 0) {
+            if (node.hasRightChild()) {
+                RemovalResult result = removeRecursive(node.getRightChild(), toRemove);
+                if (result.removed) {
+                    node.setRightChild(result.node);
+                    return new RemovalResult(node, true);
+                }
+            }
+            return new RemovalResult(node, false);
+        } else {
+            // Node to be removed found
+
+            // Case 1: Node has an immediate duplicate in the right subtree
+            if (node.hasRightChild() && node.getRightChild().getData().compareTo(toRemove) == 0) {
+                BinaryTreeNode<T> rightDuplicate = node.getRightChild();
+                node.setData(rightDuplicate.getData());
+                node.setRightChild(rightDuplicate.hasRightChild() ? rightDuplicate.getRightChild() : null);
+                return new RemovalResult(node, true);
+            }
+
+            // Case 2: No immediate duplicate, proceed with standard removal
+            if (!node.hasLeftChild() && !node.hasRightChild()) {
+                // No children
+                return new RemovalResult(null, true);
+            } else if (!node.hasLeftChild()) {
+                // Only right child
+                return new RemovalResult(node.getRightChild(), true);
+            } else if (!node.hasRightChild()) {
+                // Only left child
+                return new RemovalResult(node.getLeftChild(), true);
+            } else {
+                // Both children exist
+                // Find the in-order successor (smallest in the right subtree)
+                BinaryTreeNode<T> successor = findMin(node.getRightChild());
+                // Replace node's data with successor's data
+                node.setData(successor.getData());
+                // Remove the successor node
+                RemovalResult result = removeRecursive(node.getRightChild(), successor.getData());
+                node.setRightChild(result.node);
+                return new RemovalResult(node, result.removed);
+            }
+        }
+    }
+
+    private BinaryTreeNode<T> findMin(BinaryTreeNode<T> node) {
         while (node.hasLeftChild()) {
             node = node.getLeftChild();
         }
-        return node.getData();
+        return node;
     }
 
     @Override
@@ -106,7 +164,7 @@ public class MyBinarySearchTree<T extends Comparable<? super T>> implements Bina
 
     @Override
     public T getMinimum() {
-        if (isEmpty()) throw new IllegalStateException();
+        if (isEmpty()) throw new IllegalStateException("Tree is empty.");
         BinaryTreeNode<T> current = root;
         while (current.hasLeftChild()) {
             current = current.getLeftChild();
@@ -116,7 +174,7 @@ public class MyBinarySearchTree<T extends Comparable<? super T>> implements Bina
 
     @Override
     public T getMaximum() {
-        if (isEmpty()) throw new IllegalStateException();
+        if (isEmpty()) throw new IllegalStateException("Tree is empty.");
         BinaryTreeNode<T> current = root;
         while (current.hasRightChild()) {
             current = current.getRightChild();
@@ -126,7 +184,7 @@ public class MyBinarySearchTree<T extends Comparable<? super T>> implements Bina
 
     @Override
     public BinaryTreeNode<T> getRoot() {
-        if (isEmpty()) throw new IllegalStateException();
+        if (isEmpty()) throw new IllegalStateException("Tree is empty.");
         return root;
     }
 }
