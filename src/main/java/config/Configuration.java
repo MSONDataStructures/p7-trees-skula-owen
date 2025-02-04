@@ -3,7 +3,9 @@ package config;
 import structures.BinarySearchTree;
 import structures.BinaryTreeNode;
 import structures.BinaryTreeUtility;
+import structures.MyBinarySearchTree;
 import structures.MyBinaryTreeNode;
+import structures.MyBinaryTreeUtility;
 
 /**
  * This class acts as a configuration file which tells the testing framework
@@ -15,12 +17,11 @@ public class Configuration {
 		return new MyBinaryTreeNode<>(left, elem, right);
 	}
 
-//merge other stuffz to master brancH?
 	public static BinaryTreeUtility createBinaryTreeUtility(){
-		return null;
+		return new MyBinaryTreeUtility();
 	}
 
 	public static <T extends Comparable<? super T>> BinarySearchTree<T> createBinarySearchTree(){
-		return null;
+		return new MyBinarySearchTree<>();
 	}
 }
